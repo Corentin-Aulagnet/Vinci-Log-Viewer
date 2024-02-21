@@ -1,18 +1,14 @@
 from PyQt5.QtWidgets import QListWidget,QLayout,QMainWindow,QWidget,QGridLayout,QFileSystemModel,QTreeView,QAction,QMessageBox,QFileDialog,QTextEdit,QPushButton,QVBoxLayout
-from PyQt5.QtCore import QSize,pyqtSlot,QModelIndex,Qt
+from PyQt5.QtCore import pyqtSlot,QModelIndex,Qt
 from mainwidget import MainWidget
 
-from time import mktime
 from datetime import datetime
-import numpy as np
+
 import matplotlib
 matplotlib.use('Qt5Agg')
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg,NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 import matplotlib.dates as mdates
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-import matplotlib.cm as cm
 
 def clearLayout(layout):
         if layout != None:
