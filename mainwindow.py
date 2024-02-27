@@ -187,7 +187,10 @@ Details: To be published""".format(MainWindow.version,MainWindow.date))
         dir = QFileDialog.getExistingDirectory(self,caption="Set Working Directory",directory = MainWidget.workingDir)
         if dir != "":
             MainWidget.SetWorkingDir(dir)
+            self.tree.model().setRootPath(MainWidget.workingDir)
+            self.tree.setRootIndex(self.tree.model().index(MainWidget.workingDir))
             #self.PrintNormalMessage("Changed working directory to {}".format(MainWidget.workingDir))
+        
     def initWorkingDir(self):
         try:
             with open("user.pref",'r') as f:

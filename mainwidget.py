@@ -18,7 +18,7 @@ class MainWidget():
            'Maxim3_Current':'',
            'Maxim3_Voltage':'',
            'Maxim3_Power':'',
-           'RecipesInfos':'',
+           'RecipeInfos':'',
            'Seren1_ForwardedMes':'',
            'Seren1_ReflectedMes':'',
            'SubstrateTemperature':''}
@@ -27,16 +27,19 @@ class MainWidget():
         MainWidget.workingDir = newDir
         with open("user.pref",'w') as file:
             file.write(MainWidget.workingDir)
+        
     @staticmethod
     def OpenDir(newDir):
         MainWidget.openedDir = newDir
         files = os.scandir(MainWidget.openedDir)
         for file in files:
-            #trim date
-            infos = file.name.split('/')[-1].split(' ')[2]
-            #trim extension
-            name = infos[:-4]
-            MainWidget.files[name] = file
+            if('.CSV' in file.name or '.txt' in file.name):
+                #parse only csv files
+                #trim date
+                infos = file.name.split('/')[-1].split(' ')[2]
+                #trim extension
+                name = infos[:-4]
+                MainWidget.files[name] = file
 
 
         
