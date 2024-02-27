@@ -1,8 +1,8 @@
 from PyQt5.QtWidgets import QListWidget,QLayout,QMainWindow,QWidget,QGridLayout,QFileSystemModel,QTreeView,QAction,QMessageBox,QFileDialog,QTextEdit,QPushButton,QVBoxLayout
-from PyQt5.QtCore import pyqtSlot,QModelIndex,Qt
-from mainwidget import MainWidget
+from PyQt5.QtCore import pyqtSlot,QModelIndex,Qt,QThread
+from mainwidget import MainWidget,LoadingBar,Worker
 
-from datetime import datetime
+
 
 import matplotlib
 matplotlib.use('Qt5Agg')
@@ -137,21 +137,13 @@ class MainWindow(QMainWindow):
            'Substrate Temperature':'SubstrateTemperature'
            }
         fileName = MainWidget.files[dic[name]]
-        #parse data from file
-        with open(fileName,'r') as file:
-            lines = file.readlines()
-            timestamps=[]
-            values=[]
-            for line in lines:
-                data = line.split(',')
-                timestamps.append(datetime.strptime(data[0],"%d/%m/%Y %H:%M:%S.%f"))
-                values.append(float(data[1]))
-            timestamps=mdates.date2num(timestamps)
-            self.sc.axes.cla()
-            self.sc.axes.plot(timestamps, values, color='r')
-            xfmt = mdates.DateFormatter('%H:%M:%S')
-            self.sc.axes.xaxis.set_major_formatter(xfmt)
-            self.sc.draw()
+        timestamps, values = MainWidget.data[dic[name]]['timestamps'],MainWidget.data[dic[name]]['values']
+        self.sc.axes.cla()
+        self.sc.axes.plot(timestamps, values, color='r')
+        xfmt = mdates.DateFormatter('%H:%M:%S')
+        self.sc.axes.xaxis.set_major_formatter(xfmt)
+        self.sc.draw()
+
     def setup_graph_layout(self,_3D=False):
         clearLayout(self.graph_layout)
         self.sc = MplCanvas(self, width=7, height=4, dpi=100,_3D=_3D)
@@ -162,7 +154,26 @@ class MainWindow(QMainWindow):
     def loadFolder(self):
         path = self.tree.model().data(self.tree.selectedIndexes()[0])
         MainWidget.OpenDir(MainWidget.workingDir+'/'+path)
+        self.LoadData()
         self.updateInfos()
+
+    def LoadData(self):
+        self.bar = LoadingBar(18,self)
+        self.bar.open()
+        self.thrd = QThread()
+        self.worker = Worker(list(MainWidget.files.values()),list(MainWidget.files.keys()))
+        self.worker.moveToThread(self.thrd)
+
+        self.thrd.start()
+        self.thrd.started.connect(self.worker.run)
+        self.worker.signals.progress.connect(self.show_progress)
+        self.worker.signals.done.connect(self.bar.close)
+
+    def show_progress(self,data):
+        MainWidget.data[data[0]]['timestamps']=data[1]
+        MainWidget.data[data[0]]['values']=data[2]
+        self.bar.update()
+
     def updateInfos(self):
         self.textDisplay.setText(open(MainWidget.files['RecipeInfos']).read())
     def initMenus(self):
