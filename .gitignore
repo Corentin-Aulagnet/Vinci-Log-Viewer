@@ -1,6 +1,6 @@
 user.pref
 build.ps1
-
+launch.json
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

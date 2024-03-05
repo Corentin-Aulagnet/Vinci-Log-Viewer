@@ -112,6 +112,7 @@ class Worker(QObject):
             timestamps,values = MainWidget.parseData(self.files[i])
             self.signals.progress.emit([self.names[i],timestamps,values])
         self.signals.done.emit()
+        self.thread().exit(0)
 
 class LoadingBar(QDialog):
     def __init__(self,max,parent=None):

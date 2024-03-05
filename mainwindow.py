@@ -28,8 +28,8 @@ def clearWidget(widget):
         clearLayout(child)
 
 class MainWindow(QMainWindow):
-    version = "v0.2.0"
-    date= "27th of February, 2024"
+    version = "v0.3.0"
+    date= "5th of March, 2024"
     def __init__(self,width=1400,height=800):
         super().__init__()
         self.height = height
@@ -158,16 +158,32 @@ class MainWindow(QMainWindow):
         self.updateInfos()
 
     def LoadData(self):
+        self.threadDone = 0
         self.bar = LoadingBar(18,self)
         self.bar.open()
-        self.thrd = QThread()
-        self.worker = Worker(list(MainWidget.files.values()),list(MainWidget.files.keys()))
-        self.worker.moveToThread(self.thrd)
+        self.thrd1 = QThread()
+        self.thrd2 = QThread()
+        val = list(MainWidget.files.values())
+        keys = list(MainWidget.files.keys())
+        self.worker1 = Worker(val[:len(val)//2],keys[:len(keys)//2])
+        self.worker2 = Worker(val[len(val)//2:],keys[len(keys)//2:])
+        self.worker1.moveToThread(self.thrd1)
+        self.worker2.moveToThread(self.thrd2)
 
-        self.thrd.start()
-        self.thrd.started.connect(self.worker.run)
-        self.worker.signals.progress.connect(self.show_progress)
-        self.worker.signals.done.connect(self.bar.close)
+        self.thrd1.start()
+        self.thrd1.started.connect(self.worker1.run)
+        self.worker1.signals.progress.connect(self.show_progress)
+        self.worker1.signals.done.connect(self.closeLoadingBar)
+        self.thrd2.start()
+        self.thrd2.started.connect(self.worker2.run)
+        self.worker2.signals.progress.connect(self.show_progress)
+        self.worker2.signals.done.connect(self.closeLoadingBar)
+    
+    @pyqtSlot()
+    def closeLoadingBar(self):
+        self.threadDone+=1
+        if(self.threadDone >=2):
+            self.bar.close()
 
     def show_progress(self,data):
         MainWidget.data[data[0]]['timestamps']=data[1]
