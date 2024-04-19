@@ -28,8 +28,8 @@ def clearWidget(widget):
         clearLayout(child)
 
 class MainWindow(QMainWindow):
-    version = "v0.3.0"
-    date= "5th of March, 2024"
+    version = "v0.4.0"
+    date= "19th of April, 2024"
     def __init__(self,width=1400,height=800):
         super().__init__()
         self.height = height
