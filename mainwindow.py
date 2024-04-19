@@ -1,11 +1,11 @@
-from PyQt5.QtWidgets import QListWidget,QLayout,QMainWindow,QWidget,QGridLayout,QFileSystemModel,QTreeView,QAction,QMessageBox,QFileDialog,QTextEdit,QPushButton,QVBoxLayout
+from PyQt5.QtWidgets import QListView,QLayout,QMainWindow,QWidget,QGridLayout,QFileSystemModel,QTreeView,QAction,QMessageBox,QFileDialog,QTextEdit,QPushButton,QVBoxLayout
 from PyQt5.QtCore import pyqtSlot,QModelIndex,Qt,QThread
 from mainwidget import MainWidget,LoadingBar,Worker
+from customListModel import CustomListModel
 
 
-
-import matplotlib
-matplotlib.use('Qt5Agg')
+import matplotlib as mpl
+mpl.use('Qt5Agg')
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg,NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 import matplotlib.dates as mdates
@@ -84,8 +84,11 @@ class MainWindow(QMainWindow):
         self.setup_graph_layout()
         
         #Plot Selection
-        self.list = QListWidget()
-        self.list.addItems(['Chamber Pressure',
+        self.list = QListView()
+        self.model = CustomListModel()
+        self.list.setModel(self.model)
+
+        strList = ['Chamber Pressure',
            'Massflow1',
            'Massflow2',
            'Massflow3',
@@ -101,8 +104,10 @@ class MainWindow(QMainWindow):
            'Maxim3 Power',
            'Seren1 ForwardedMes',
            'Seren1 ReflectedMes',
-           'Substrate Temperature'])
-        self.list.doubleClicked.connect(self.plotThis)
+           'Substrate Temperature']
+        self.model.setStringList(strList)
+
+        self.model.dataChanged.connect(self.plotAll)
 
         self.layout.addLayout(sublayout,0,0)
         self.layout.addLayout(self.graph_layout,0,1)
@@ -114,6 +119,54 @@ class MainWindow(QMainWindow):
         
         self.setCentralWidget(self.centralWidget)
 
+    @pyqtSlot(QModelIndex,QModelIndex)
+    def plotAll(self,topLeft:QModelIndex,topRight:QModelIndex):
+        self.sc.axes.cla()
+        self.sc.twin.cla()
+        cmap = ["#fd7f6f", "#7eb0d5", "#b2e061", "#bd7ebe", "#ffb55a", "#ffee65", "#beb9db", "#fdcce5", "#8bd3c7"]
+        leftScale = list(self.model.partiallyCheckedItems)
+        dic = {'Chamber Pressure':'DepositChamberFullRangePressure',
+            'Massflow1':'Massflow1',
+            'Massflow2':'Massflow2',
+            'Massflow3':'Massflow3',
+            'Massflow4':'Massflow4',
+            'Maxim1 Current':'Maxim1_Current',
+            'Maxim1 Voltage':'Maxim1_Voltage',
+            'Maxim1 Power':'Maxim1_Power',
+            'Maxim2 Current':'Maxim2_Current',
+            'Maxim2 Voltage':'Maxim2_Voltage',
+            'Maxim2 Power':'Maxim2_Power',
+            'Maxim3 Current':'Maxim3_Current',
+            'Maxim3 Voltage':'Maxim3_Voltage',
+            'Maxim3 Power':'Maxim3_Power',
+            'Seren1 ForwardedMes':'Seren1_ForwardedMes',
+            'Seren1 ReflectedMes':'Seren1_ReflectedMes',
+            'Substrate Temperature':'SubstrateTemperature'
+            }
+        rightScale = list(self.model.checkedItems)
+        for i,index in enumerate(leftScale):
+            name = index.data(Qt.DisplayRole)
+            fileName = MainWidget.files[dic[name]]
+            timestamps, values = MainWidget.data[dic[name]]['timestamps'],MainWidget.data[dic[name]]['values']
+            self.sc.axes.plot(timestamps, values,label = name,color=cmap[i%len(cmap)])
+        if(len(rightScale)>0):
+            self.sc.twin.set_visible(True)
+            for i,index in enumerate(rightScale):
+                name = index.data(Qt.DisplayRole)
+                fileName = MainWidget.files[dic[name]]
+                timestamps, values = MainWidget.data[dic[name]]['timestamps'],MainWidget.data[dic[name]]['values']
+                self.sc.twin.plot(timestamps, values,linestyle='dashed',label = name,color=cmap[i%len(cmap)])
+        else:
+            self.sc.twin.set_visible(False)
+        if len(leftScale)+len(rightScale)>1:
+            lines, labels = self.sc.axes.get_legend_handles_labels()
+            lines2, labels2 = self.sc.twin.get_legend_handles_labels()
+            self.sc.axes.legend(lines + lines2, labels + labels2)
+            #if(len(leftScale)>0):self.sc.axes.legend()
+            #if(len(rightScale)>0):self.sc.twin.legend()
+        xfmt = mdates.DateFormatter('%H:%M:%S')
+        self.sc.axes.xaxis.set_major_formatter(xfmt)
+        self.sc.draw()
 
     @pyqtSlot(QModelIndex)
     def plotThis(self,index:QModelIndex):
@@ -232,5 +285,6 @@ class MplCanvas(FigureCanvasQTAgg):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         if(_3D):self.axes = self.fig.add_subplot(projection='3d')
         else: self.axes = self.fig.add_subplot()
-        
+        self.twin = self.axes.twinx()
+        self.twin.set_visible(False)
         super(MplCanvas, self).__init__(self.fig)
