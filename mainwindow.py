@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QListView,QLayout,QMainWindow,QWidget,QGridLayout,QFileSystemModel,QTreeView,QAction,QMessageBox,QFileDialog,QTextEdit,QPushButton,QVBoxLayout
+from PyQt5.QtWidgets import QAbstractItemView,QListView,QLayout,QMainWindow,QWidget,QGridLayout,QFileSystemModel,QTreeView,QAction,QMessageBox,QFileDialog,QTextEdit,QPushButton,QVBoxLayout
 from PyQt5.QtCore import pyqtSlot,QModelIndex,Qt,QThread
 from mainwidget import MainWidget,LoadingBar,Worker
 from customListModel import CustomListModel
@@ -112,6 +112,8 @@ class MainWindow(QMainWindow):
         self.layout.addLayout(sublayout,0,0)
         self.layout.addLayout(self.graph_layout,0,1)
         self.layout.addWidget(self.list,1,1)
+        self.list.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.list.setEnabled(False)
         self.layout.addWidget(self.textDisplay,1,0)
 
 
@@ -209,6 +211,7 @@ class MainWindow(QMainWindow):
         MainWidget.OpenDir(MainWidget.workingDir+'/'+path)
         self.LoadData()
         self.updateInfos()
+        self.list.setEnabled(True)
 
     def LoadData(self):
         self.threadDone = 0
