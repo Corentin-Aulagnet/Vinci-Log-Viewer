@@ -1,9 +1,75 @@
-from PyQt5.QtWidgets import QDialog,QProgressBar,QVBoxLayout,QSizePolicy,QLabel
+from PyQt5.QtWidgets import QWidget,QDialog,QProgressBar,QVBoxLayout,QSizePolicy,QLabel
 from PyQt5.QtCore import QThreadPool, QObject, QRunnable, pyqtSignal
 from PyQt5.QtCore import pyqtSignal,Qt
 import os
 from datetime import datetime
 import matplotlib.dates as mdates
+def clearLayout(layout):
+        if layout != None:
+            while layout.count():
+                child = layout.takeAt(0)
+                if child.widget():
+                    child.widget().deleteLater()
+                elif child.layout():
+                    clearLayout(child)
+
+def clearWidget(widget):
+    children = widget.findChildren(QWidget)
+    for child in children:
+        child.deleteLater()
+    children = widget.findChildren(QLayout)
+    for child in children:        
+        clearLayout(child)
+def ReadFiles(dir):
+    files_={'DepositChamberFullRangePressure':'',
+           'Massflow1':'',
+           'Massflow2':'',
+           'Massflow3':'',
+           'Massflow4':'',
+           'Maxim1_Current':'',
+           'Maxim1_Voltage':'',
+           'Maxim1_Power':'',
+           'Maxim2_Current':'',
+           'Maxim2_Voltage':'',
+           'Maxim2_Power':'',
+           'Maxim3_Current':'',
+           'Maxim3_Voltage':'',
+           'Maxim3_Power':'',
+           'RecipeInfos':'',
+           'Seren1_ForwardedMes':'',
+           'Seren1_ReflectedMes':'',
+           'SubstrateTemperature':''}
+    files = os.scandir(dir)
+    for file in files:
+        if('.CSV' in file.name):
+            #parse only csv files
+            #trim date
+            infos = file.name.split('/')[-1].split(' ')[2]
+            #trim extension
+            name = infos[:-4]
+            files_[name] = file               
+        elif('.txt' in file.name): 
+            #parse only csv files
+            #trim date
+            infos = file.name.split('/')[-1].split(' ')[2]
+            #trim extension
+            name = infos[:-4]
+            files_[name] = file
+    return files_
+
+def ParseData(fileName):
+        #parse data from file
+        with open(fileName,'r') as file:
+            lines = file.readlines()
+            timestamps=[]
+            values=[]
+            for line in lines:
+                data = line.split(',')
+                timestamps.append(datetime.strptime(data[0],"%d/%m/%Y %H:%M:%S.%f"))
+                values.append(float(data[1]))
+            timestamps=mdates.date2num(timestamps)
+        return timestamps,values
+
 class MainWidget():
     messageChanged = pyqtSignal(str)
     workingDir = '.'
@@ -56,38 +122,9 @@ class MainWidget():
     @staticmethod
     def OpenDir(newDir):
         MainWidget.openedDir = newDir
-        files = os.scandir(MainWidget.openedDir)
-        for file in files:
-            if('.CSV' in file.name):
-                #parse only csv files
-                #trim date
-                infos = file.name.split('/')[-1].split(' ')[2]
-                #trim extension
-                name = infos[:-4]
-                MainWidget.files[name] = file               
-            elif('.txt' in file.name): 
-                #parse only csv files
-                #trim date
-                infos = file.name.split('/')[-1].split(' ')[2]
-                #trim extension
-                name = infos[:-4]
-                MainWidget.files[name] = file
+        files = ReadFiles(newDir)
+        MainWidget.files = files
             
-
-    @staticmethod
-    def parseData(fileName):
-        #parse data from file
-        with open(fileName,'r') as file:
-            lines = file.readlines()
-            timestamps=[]
-            values=[]
-            for line in lines:
-                data = line.split(',')
-                timestamps.append(datetime.strptime(data[0],"%d/%m/%Y %H:%M:%S.%f"))
-                values.append(float(data[1]))
-            timestamps=mdates.date2num(timestamps)
-        return timestamps,values
-        
     def __init__(self,*args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -109,13 +146,13 @@ class Worker(QObject):
         for i in range(len(self.files)):
             if(self.names[i] == 'RecipeInfos'):
                 continue
-            timestamps,values = MainWidget.parseData(self.files[i])
+            timestamps,values = ParseData(self.files[i])
             self.signals.progress.emit([self.names[i],timestamps,values])
         self.signals.done.emit()
         self.thread().exit(0)
 
 class LoadingBar(QDialog):
-    def __init__(self,max,parent=None):
+    def __init__(self,max,text=None,parent=None):
         super().__init__(parent)
         self.value = 0
         self.bar = QProgressBar()
@@ -127,6 +164,11 @@ class LoadingBar(QDialog):
         self.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Preferred)
         self.setWindowFlags(Qt.Window | Qt.WindowTitleHint | Qt.CustomizeWindowHint)
         self.setWindowTitle("Import Progress")
+        if text != None:
+            self.bar.setTextVisible(True)
+            self.bar.setFormat(text)
+            self.bar.setAlignment(Qt.AlignCenter)
+        self.bar.setValue(self.value)
     def update(self):
         self.value +=1
         self.bar.setValue(self.value)

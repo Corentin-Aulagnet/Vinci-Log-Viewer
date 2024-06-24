@@ -1,31 +1,13 @@
 from PyQt5.QtWidgets import QAbstractItemView,QListView,QLayout,QMainWindow,QWidget,QGridLayout,QFileSystemModel,QTreeView,QAction,QMessageBox,QFileDialog,QTextEdit,QPushButton,QVBoxLayout
 from PyQt5.QtCore import pyqtSlot,QModelIndex,Qt,QThread
-from mainwidget import MainWidget,LoadingBar,Worker
+from mainwidget import MainWidget,LoadingBar,Worker,clearLayout,clearWidget
 from customListModel import CustomListModel
+from comparepopup import ComparePopUp
 
-
-import matplotlib as mpl
-mpl.use('Qt5Agg')
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg,NavigationToolbar2QT as NavigationToolbar
-from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.dates as mdates
+from mplcanvas import MplCanvas
 
-def clearLayout(layout):
-        if layout != None:
-            while layout.count():
-                child = layout.takeAt(0)
-                if child.widget():
-                    child.widget().deleteLater()
-                elif child.layout():
-                    clearLayout(child)
-
-def clearWidget(widget):
-    children = widget.findChildren(QWidget)
-    for child in children:
-        child.deleteLater()
-    children = widget.findChildren(QLayout)
-    for child in children:        
-        clearLayout(child)
 
 class MainWindow(QMainWindow):
     version = "v0.4.0"
@@ -205,6 +187,7 @@ class MainWindow(QMainWindow):
         self.toolbar = NavigationToolbar(self.sc, self)
         self.graph_layout.addWidget(self.sc)
         self.graph_layout.addWidget(self.toolbar)
+
     @pyqtSlot()
     def loadFolder(self):
         path = self.tree.model().data(self.tree.selectedIndexes()[0])
@@ -215,7 +198,7 @@ class MainWindow(QMainWindow):
 
     def LoadData(self):
         self.threadDone = 0
-        self.bar = LoadingBar(18,self)
+        self.bar = LoadingBar(18,parent=self)
         self.bar.open()
         self.thrd1 = QThread()
         self.thrd2 = QThread()
@@ -249,7 +232,11 @@ class MainWindow(QMainWindow):
     def updateInfos(self):
         self.textDisplay.setText(open(MainWidget.files['RecipeInfos']).read())
     def initMenus(self):
-
+        ##Tools
+        self.toolsMenu = self.menuBar().addMenu("&Tools")
+        self.compareLogs_action = QAction("Compare logs",self)
+        self.compareLogs_action.triggered.connect(self.OpenCompare)
+        self.toolsMenu.addAction(self.compareLogs_action)
         ##Preferences
         self.prefMenu = self.menuBar().addMenu("&Preferences")
         ###Editor
@@ -261,6 +248,10 @@ class MainWindow(QMainWindow):
         self.version_action = QAction("Version",self)
         self.version_action.triggered.connect(self.DisplayVersion)
         self.aboutMenu.addAction(self.version_action)
+
+    def OpenCompare(self):
+        self.popup = ComparePopUp()
+        
 
     def DisplayVersion(self):
         QMessageBox.information(self,'Version',"""Version: {}\n
@@ -281,13 +272,3 @@ Details: To be published""".format(MainWindow.version,MainWindow.date))
         except FileNotFoundError:
             pass
 
-
-class MplCanvas(FigureCanvasQTAgg):
-
-    def __init__(self, parent=None, width=6, height=4, dpi=100,_3D=False):
-        self.fig = Figure(figsize=(width, height), dpi=dpi)
-        if(_3D):self.axes = self.fig.add_subplot(projection='3d')
-        else: self.axes = self.fig.add_subplot()
-        self.twin = self.axes.twinx()
-        self.twin.set_visible(False)
-        super(MplCanvas, self).__init__(self.fig)
