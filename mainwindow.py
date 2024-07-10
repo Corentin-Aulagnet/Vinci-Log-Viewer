@@ -10,8 +10,8 @@ from mplcanvas import MplCanvas
 
 
 class MainWindow(QMainWindow):
-    version = "v0.4.0"
-    date= "19th of April, 2024"
+    version = "v0.5.1"
+    date= "10th of July, 2024"
     def __init__(self,width=1400,height=800):
         super().__init__()
         self.height = height
@@ -104,7 +104,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.centralWidget)
 
     @pyqtSlot(QModelIndex,QModelIndex)
-    def plotAll(self,topLeft:QModelIndex,topRight:QModelIndex):
+    def plotAll(self,topLeft:QModelIndex=None,topRight:QModelIndex=None):
         self.sc.axes.cla()
         self.sc.twin.cla()
         cmap = ["#fd7f6f", "#7eb0d5", "#b2e061", "#bd7ebe", "#ffb55a", "#ffee65", "#beb9db", "#fdcce5", "#8bd3c7"]
@@ -190,11 +190,12 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot()
     def loadFolder(self):
-        path = self.tree.model().data(self.tree.selectedIndexes()[0])
-        MainWidget.OpenDir(MainWidget.workingDir+'/'+path)
+        path = self.tree.model().filePath(self.tree.selectedIndexes()[0])
+        MainWidget.OpenDir(path)
         self.LoadData()
         self.updateInfos()
         self.list.setEnabled(True)
+        
 
     def LoadData(self):
         self.threadDone = 0
@@ -223,6 +224,7 @@ class MainWindow(QMainWindow):
         self.threadDone+=1
         if(self.threadDone >=2):
             self.bar.close()
+            self.plotAll()
 
     def show_progress(self,data):
         MainWidget.data[data[0]]['timestamps']=data[1]
@@ -256,7 +258,8 @@ class MainWindow(QMainWindow):
     def DisplayVersion(self):
         QMessageBox.information(self,'Version',"""Version: {}\n
 Date of publication: {}\n
-Details: To be published""".format(MainWindow.version,MainWindow.date))
+Details: Developped and maintained by Corentin Aulagnet.\r
+You can publish new issues on <a href=\'https://github.com/Corentin-Aulagnet/Vinci-Log-Viewer/issues'>GitHub</a>""".format(MainWindow.version,MainWindow.date))
     def SetWorkingDir(self):
         dir = QFileDialog.getExistingDirectory(self,caption="Set Working Directory",directory = MainWidget.workingDir)
         if dir != "":
