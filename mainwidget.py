@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import QWidget,QDialog,QProgressBar,QVBoxLayout,QSizePolicy,QLabel
-from PyQt5.QtCore import QThreadPool, QObject, QRunnable, pyqtSignal
-from PyQt5.QtCore import pyqtSignal,Qt
+from PyQt5.QtWidgets import QWidget,QLayout
+from PyQt5.QtCore import QThreadPool, QObject,  pyqtSignal
+from PyQt5.QtCore import pyqtSignal
 import os
 from datetime import datetime
 import matplotlib.dates as mdates
@@ -151,24 +151,3 @@ class Worker(QObject):
         self.signals.done.emit()
         self.thread().exit(0)
 
-class LoadingBar(QDialog):
-    def __init__(self,max,text=None,parent=None):
-        super().__init__(parent)
-        self.value = 0
-        self.bar = QProgressBar()
-        self.bar.setRange(0,max-1)
-        layout = QVBoxLayout()
-        self.setModal(True)
-        layout.addWidget(self.bar)
-        self.setLayout(layout)
-        self.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Preferred)
-        self.setWindowFlags(Qt.Window | Qt.WindowTitleHint | Qt.CustomizeWindowHint)
-        self.setWindowTitle("Import Progress")
-        if text != None:
-            self.bar.setTextVisible(True)
-            self.bar.setFormat(text)
-            self.bar.setAlignment(Qt.AlignCenter)
-        self.bar.setValue(self.value)
-    def update(self):
-        self.value +=1
-        self.bar.setValue(self.value)

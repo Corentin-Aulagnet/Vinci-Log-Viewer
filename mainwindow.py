@@ -1,6 +1,7 @@
-from PyQt5.QtWidgets import QAbstractItemView,QListView,QLayout,QMainWindow,QWidget,QGridLayout,QFileSystemModel,QTreeView,QAction,QMessageBox,QFileDialog,QTextEdit,QPushButton,QVBoxLayout
+from PyQt5.QtWidgets import QAbstractItemView,QListView,QMainWindow,QWidget,QGridLayout,QFileSystemModel,QTreeView,QAction,QMessageBox,QFileDialog,QTextEdit,QPushButton,QVBoxLayout
 from PyQt5.QtCore import pyqtSlot,QModelIndex,Qt,QThread
-from mainwidget import MainWidget,LoadingBar,Worker,clearLayout,clearWidget
+from mainwidget import MainWidget,Worker,clearLayout,clearWidget
+from utils import LoadingBar
 from customListModel import CustomListModel
 from comparepopup import ComparePopUp
 
@@ -8,9 +9,10 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 import matplotlib.dates as mdates
 from mplcanvas import MplCanvas
 
-
+import sys,os
+from downloader import check_for_update
 class MainWindow(QMainWindow):
-    version = "v0.5.1"
+    version = "v0.4.0"
     date= "10th of July, 2024"
     def __init__(self,width=1400,height=800):
         super().__init__()
@@ -29,6 +31,23 @@ class MainWindow(QMainWindow):
         self.initMenus()
 
         self.show()
+        self.checkForUpdates()
+
+    def checkForUpdates(self):
+        #Check for updates
+        user = 'Corentin-Aulagnet'
+        repo = 'Vinci-Log-Viewer'
+        asset_name= lambda s : f'VinciLogViewer_{s}_python3.8.zip'
+        #Get the folder where the app is running from
+        if getattr(sys, 'frozen', False):
+            # If the application is run as a bundle, the PyInstaller bootloader
+            # extends the sys module by a flag frozen=True and sets the app 
+            # path into variable _MEIPASS'.
+            application_path = sys._MEIPASS
+        else:
+            application_path = os.path.dirname(os.path.abspath(__file__))
+        installation_folder = application_path
+        check_for_update(user, repo, MainWindow.version,installation_folder,asset_name)
 
     def initLayout(self):
         self.centralWidget = QWidget()
@@ -199,7 +218,7 @@ class MainWindow(QMainWindow):
 
     def LoadData(self):
         self.threadDone = 0
-        self.bar = LoadingBar(18,parent=self)
+        self.bar = LoadingBar(18,title="Import Progress",parent=self)
         self.bar.open()
         self.thrd1 = QThread()
         self.thrd2 = QThread()
