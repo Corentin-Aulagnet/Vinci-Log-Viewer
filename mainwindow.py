@@ -12,7 +12,7 @@ from mplcanvas import MplCanvas
 import sys,os
 from updateCheck import start_update,UpdateCheckThread
 class MainWindow(QMainWindow):
-    version = "v0.6.0"
+    version = "v0.5.0"
     date= "17th of July, 2024"
     github_user = 'Corentin-Aulagnet'
     github_repo = 'Vinci-Log-Viewer'

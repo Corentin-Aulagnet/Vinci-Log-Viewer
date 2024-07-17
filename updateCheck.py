@@ -55,4 +55,4 @@ def check_for_update(user, repo, current_version,installation_folder,asset_name)
 
 def start_update(latest_version,installation_folder,user,repo,asset_name):
     exe_path = "{}\\VinciLogViewerInstaller.exe".format(installation_folder)
-    subprocess.Popen(['runas', '/user:Administrator',exe_path, installation_folder,asset_name,repo,user,latest_version])
+    subprocess.Popen([exe_path, installation_folder,asset_name,repo,user,latest_version])
