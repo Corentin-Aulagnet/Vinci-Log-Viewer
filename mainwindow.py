@@ -1,6 +1,7 @@
-from PyQt5.QtWidgets import QAbstractItemView,QListView,QLayout,QMainWindow,QWidget,QGridLayout,QFileSystemModel,QTreeView,QAction,QMessageBox,QFileDialog,QTextEdit,QPushButton,QVBoxLayout
+from PyQt5.QtWidgets import QApplication,QAbstractItemView,QListView,QMainWindow,QWidget,QGridLayout,QFileSystemModel,QTreeView,QAction,QMessageBox,QFileDialog,QTextEdit,QPushButton,QVBoxLayout
 from PyQt5.QtCore import pyqtSlot,QModelIndex,Qt,QThread
-from mainwidget import MainWidget,LoadingBar,Worker,clearLayout,clearWidget
+from mainwidget import MainWidget,Worker,clearLayout
+from utils import LoadingBar
 from customListModel import CustomListModel
 from comparepopup import ComparePopUp
 
@@ -8,10 +9,14 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 import matplotlib.dates as mdates
 from mplcanvas import MplCanvas
 
-
+import sys,os
+from updateCheck import start_update,UpdateCheckThread,get_latest_release
 class MainWindow(QMainWindow):
-    version = "v0.5.1"
-    date= "10th of July, 2024"
+    version = "v0.6.0"
+    date= "17th of July, 2024"
+    github_user = 'Corentin-Aulagnet'
+    github_repo = 'Vinci-Log-Viewer'
+    asset_name= lambda s : f'VinciLogViewer_{s}_python3.8.zip'
     def __init__(self,width=1400,height=800):
         super().__init__()
         self.height = height
@@ -27,9 +32,44 @@ class MainWindow(QMainWindow):
         self.initLayout()
         
         self.initMenus()
-
+        self.checkForUpdates()
         self.show()
+        
+        
+    def start(self):
+        self.checkForUpdates()
 
+    def checkForUpdates(self):
+        #Check for updates
+        # Start the update check thread
+        self.update_thread = UpdateCheckThread(MainWindow.github_user,MainWindow.github_repo,MainWindow.version,MainWindow.asset_name)
+        self.update_thread.update_available.connect(self.on_update_check_finished)
+        self.update_thread.start()
+
+        
+        
+    @pyqtSlot(str)
+    def on_update_check_finished(self,latest_version):
+        #Get the folder where the app is running from
+        if getattr(sys, 'frozen', False):
+            # If the application is run as a bundle, the PyInstaller bootloader
+            # extends the sys module by a flag frozen=True and sets the app 
+            # path into variable _MEIPASS'.
+            application_path = sys._MEIPASS
+        else:
+            application_path = os.path.dirname(os.path.abspath(__file__))
+        installation_folder = application_path
+        if latest_version != '':
+            msgBox = QMessageBox()
+            msgBox.setText(f"A newer version ({latest_version}) is available. You are currently using version {MainWindow.version}.");
+            msgBox.setInformativeText("Do you want to download the latest version? VinciLogViewer will be closed")
+            msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            msgBox.setDefaultButton(QMessageBox.Yes)
+            ret = msgBox.exec()
+            if ret == QMessageBox.Yes : 
+                start_update(latest_version,installation_folder,MainWindow.github_user,MainWindow.github_repo,MainWindow.asset_name(latest_version))
+                QApplication.instance().quit()
+    
     def initLayout(self):
         self.centralWidget = QWidget()
         self.layout = QGridLayout()
@@ -199,7 +239,7 @@ class MainWindow(QMainWindow):
 
     def LoadData(self):
         self.threadDone = 0
-        self.bar = LoadingBar(18,parent=self)
+        self.bar = LoadingBar(18,title="Import Progress",parent=self)
         self.bar.open()
         self.thrd1 = QThread()
         self.thrd2 = QThread()
@@ -256,10 +296,14 @@ class MainWindow(QMainWindow):
         
 
     def DisplayVersion(self):
-        QMessageBox.information(self,'Version',"""Version: {}\n
-Date of publication: {}\n
-Details: Developped and maintained by Corentin Aulagnet.\r
+        msgBox = QMessageBox(self)
+        msgBox.setTextFormat(Qt.RichText)
+        msgBox.setWindowTitle('About')
+        msgBox.setText("""Version: {}\r\n
+Date of publication: {}\r\n
+Details: Developped and maintained by Corentin Aulagnet.\r\n
 You can publish new issues on <a href=\'https://github.com/Corentin-Aulagnet/Vinci-Log-Viewer/issues'>GitHub</a>""".format(MainWindow.version,MainWindow.date))
+        msgBox.exec()
     def SetWorkingDir(self):
         dir = QFileDialog.getExistingDirectory(self,caption="Set Working Directory",directory = MainWidget.workingDir)
         if dir != "":

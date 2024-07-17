@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QStatusBar,QAbstractItemView,QListView,QLayout,QMainWindow,QWidget,QGridLayout,QHBoxLayout,QFileSystemModel,QTreeView,QAction,QMessageBox,QFileDialog,QTextEdit,QPushButton,QVBoxLayout
 from PyQt5.QtCore import pyqtSlot,QModelIndex,Qt,QThread
-from mainwidget import ReadFiles,ParseData,LoadingBar,Worker,MainWidget,clearLayout,clearWidget
+from mainwidget import ReadFiles,ParseData,Worker,MainWidget,clearLayout,clearWidget
+from utils import LoadingBar
 from customListModel import CustomListModel
 import numpy as np
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
@@ -65,7 +66,7 @@ class LogLoader(QWidget):
 
     def LoadData(self,index):
         self.threadDone = 0
-        self.bar = LoadingBar(18,"Loading Logs {}".format(self.index),self)
+        self.bar = LoadingBar(18,text="Loading Logs {}".format(self.index),title="ImportProgress",parent=self)
         self.parent().notifyLoading(self.index)
         self.parent().statusbar.addWidget(self.bar)
         if self.thrd1 == None:
