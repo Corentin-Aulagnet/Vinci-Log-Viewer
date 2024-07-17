@@ -8,7 +8,7 @@ def copy_and_replace(src_dir, dst_dir):
     try:
         # Copy the entire directory tree from src_dir to dst_dir
         try:
-            os.mkdir("c:\\test")
+            os.mkdir(dst_dir)
         except:
             pass
         shutil.copytree(src_dir, dst_dir, dirs_exist_ok=True)
@@ -45,3 +45,5 @@ class LoadingBar(QDialog):
     def update(self,value=1):
         self.value +=value
         self.bar.setValue(self.value)
+    def set_max(self,max):
+        self.bar.setRange(0,max)
