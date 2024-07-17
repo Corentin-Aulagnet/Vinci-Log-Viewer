@@ -10,9 +10,9 @@ import matplotlib.dates as mdates
 from mplcanvas import MplCanvas
 
 import sys,os
-from updateCheck import start_update,UpdateCheckThread
+from updateCheck import start_update,UpdateCheckThread,get_latest_release
 class MainWindow(QMainWindow):
-    version = "v0.5.0"
+    version = "v0.6.0"
     date= "17th of July, 2024"
     github_user = 'Corentin-Aulagnet'
     github_repo = 'Vinci-Log-Viewer'
@@ -59,7 +59,7 @@ class MainWindow(QMainWindow):
         else:
             application_path = os.path.dirname(os.path.abspath(__file__))
         installation_folder = application_path
-        if latest_version != None:
+        if latest_version != '':
             msgBox = QMessageBox()
             msgBox.setText(f"A newer version ({latest_version}) is available. You are currently using version {MainWindow.version}.");
             msgBox.setInformativeText("Do you want to download the latest version? VinciLogViewer will be closed")
@@ -296,10 +296,14 @@ class MainWindow(QMainWindow):
         
 
     def DisplayVersion(self):
-        QMessageBox.information(self,'Version',"""Version: {}\n
-Date of publication: {}\n
-Details: Developped and maintained by Corentin Aulagnet.\r
+        msgBox = QMessageBox(self)
+        msgBox.setTextFormat(Qt.RichText)
+        msgBox.setWindowTitle('About')
+        msgBox.setText("""Version: {}\r\n
+Date of publication: {}\r\n
+Details: Developped and maintained by Corentin Aulagnet.\r\n
 You can publish new issues on <a href=\'https://github.com/Corentin-Aulagnet/Vinci-Log-Viewer/issues'>GitHub</a>""".format(MainWindow.version,MainWindow.date))
+        msgBox.exec()
     def SetWorkingDir(self):
         dir = QFileDialog.getExistingDirectory(self,caption="Set Working Directory",directory = MainWidget.workingDir)
         if dir != "":
