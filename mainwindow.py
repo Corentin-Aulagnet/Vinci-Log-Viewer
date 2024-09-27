@@ -244,8 +244,8 @@ class MainWindow(QMainWindow):
                 os.mkdir("tmp")
                 with py7zr.SevenZipFile(file, mode='r') as z:
                     z.extractall("tmp")
-        else:
-            return
+            else:
+                return
         MainWidget.OpenDir(path)
         self.LoadData()
         self.updateInfos()
@@ -281,8 +281,18 @@ class MainWindow(QMainWindow):
         if(self.threadDone >=2):
             self.bar.close()
             self.plotAll()
-            shutil.rmtree("tmp")
+            self.cleanTempDir()
 
+    def cleanTempDir(self):
+        try:
+                shutil.rmtree("tmp")
+        except (FileNotFoundError,PermissionError) as e:
+            if type(e) == PermissionError:
+                msg = QMessageBox.critical(self,"Error cleaning the temp directory",f"{e.strerror}: {e.filename}. Free the file and click Ok")
+                if msg == QMessageBox.Ok:
+                    #ok was clicked
+                    #Try cleaning the dir again
+                    self.cleanTempDir()
     def show_progress(self,data):
         MainWidget.data[data[0]]['timestamps']=data[1]
         MainWidget.data[data[0]]['values']=data[2]
