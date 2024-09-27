@@ -5,5 +5,9 @@ import sys
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     w = MainWindow()
-    w.show()
+    try:
+        import pyi_splash
+        pyi_splash.close()
+    except:
+        pass
     sys.exit(app.exec_())
