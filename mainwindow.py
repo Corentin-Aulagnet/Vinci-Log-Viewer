@@ -9,11 +9,12 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 import matplotlib.dates as mdates
 from mplcanvas import MplCanvas
 
-import sys,os
+import py7zr,zipfile
+import sys,os,shutil
 from updateCheck import start_update,UpdateCheckThread,get_latest_release
 class MainWindow(QMainWindow):
-    version = "v0.6.0"
-    date= "17th of July, 2024"
+    version = "v0.7.0"
+    date= "26th of September, 2024"
     github_user = 'Corentin-Aulagnet'
     github_repo = 'Vinci-Log-Viewer'
     asset_name= lambda s : f'VinciLogViewer_{s}_python3.8.zip'
@@ -231,10 +232,25 @@ class MainWindow(QMainWindow):
     @pyqtSlot()
     def loadFolder(self):
         path = self.tree.model().filePath(self.tree.selectedIndexes()[0])
+        if(not os.path.isdir(path)):
+            file = path
+            path = "tmp"
+            if(file[-3:]=="zip"):
+                #Extract to a tmp folder first
+                os.mkdir("tmp")
+                with zipfile.ZipFile(file, mode='r') as zip_ref:
+                    zip_ref.extractall("tmp")
+            elif(file[-3:]==".7z"):
+                os.mkdir("tmp")
+                with py7zr.SevenZipFile(file, mode='r') as z:
+                    z.extractall("tmp")
+        else:
+            return
         MainWidget.OpenDir(path)
         self.LoadData()
         self.updateInfos()
         self.list.setEnabled(True)
+        
         
 
     def LoadData(self):
@@ -265,6 +281,7 @@ class MainWindow(QMainWindow):
         if(self.threadDone >=2):
             self.bar.close()
             self.plotAll()
+            shutil.rmtree("tmp")
 
     def show_progress(self,data):
         MainWidget.data[data[0]]['timestamps']=data[1]
