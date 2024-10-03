@@ -1,6 +1,10 @@
 import os,shutil
 from PyQt5.QtWidgets import QDialog,QProgressBar,QVBoxLayout,QSizePolicy
 from PyQt5.QtCore import Qt
+import re
+def alphanum_key(s):
+    # Split the string into list of strings and numbers
+        return [int(text) if text.isdigit() else text.lower() for text in re.split('([0-9]+)', s)]
 def copy_and_replace(src_dir, dst_dir):
     """
     Copy all files and subdirectories from src_dir to dst_dir, overwriting any existing files.

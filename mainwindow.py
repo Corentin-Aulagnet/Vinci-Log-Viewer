@@ -4,16 +4,16 @@ from mainwidget import MainWidget,Worker,clearLayout
 from utils import LoadingBar
 from customListModel import CustomListModel
 from comparepopup import ComparePopUp
-
+import re
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.dates as mdates
 from mplcanvas import MplCanvas
-
+import utils
 import py7zr,zipfile
 import sys,os,shutil
 from updateCheck import start_update,UpdateCheckThread,get_latest_release
 class MainWindow(QMainWindow):
-    version = "v0.7.0"
+    version = "v0.7.1"
     date= "26th of September, 2024"
     github_user = 'Corentin-Aulagnet'
     github_repo = 'Vinci-Log-Viewer'
@@ -111,25 +111,6 @@ class MainWindow(QMainWindow):
         self.model = CustomListModel()
         self.list.setModel(self.model)
 
-        strList = ['Chamber Pressure',
-           'Massflow1',
-           'Massflow2',
-           'Massflow3',
-           'Massflow4',
-           'Maxim1 Current',
-           'Maxim1 Voltage',
-           'Maxim1 Power',
-           'Maxim2 Current',
-           'Maxim2 Voltage',
-           'Maxim2 Power',
-           'Maxim3 Current',
-           'Maxim3 Voltage',
-           'Maxim3 Power',
-           'Seren1 ForwardedMes',
-           'Seren1 ReflectedMes',
-           'Substrate Temperature']
-        self.model.setStringList(strList)
-
         self.model.dataChanged.connect(self.plotAll)
 
         self.layout.addLayout(sublayout,0,0)
@@ -170,16 +151,18 @@ class MainWindow(QMainWindow):
             }
         rightScale = list(self.model.checkedItems)
         for i,index in enumerate(leftScale):
-            name = index.data(Qt.DisplayRole)
-            fileName = MainWidget.files[dic[name]]
-            timestamps, values = MainWidget.data[dic[name]]['timestamps'],MainWidget.data[dic[name]]['values']
+            displayName = index.data(Qt.DisplayRole)
+            name = MainWidget.displayName[displayName]
+            fileName = MainWidget.files[name]
+            timestamps, values = MainWidget.data[name]['timestamps'],MainWidget.data[name]['values']
             self.sc.axes.plot(timestamps, values,label = name,color=cmap[i%len(cmap)])
         if(len(rightScale)>0):
             self.sc.twin.set_visible(True)
             for i,index in enumerate(rightScale):
-                name = index.data(Qt.DisplayRole)
-                fileName = MainWidget.files[dic[name]]
-                timestamps, values = MainWidget.data[dic[name]]['timestamps'],MainWidget.data[dic[name]]['values']
+                displayName = index.data(Qt.DisplayRole)
+                name = MainWidget.displayName[displayName]
+                fileName = MainWidget.files[name]
+                timestamps, values = MainWidget.data[name]['timestamps'],MainWidget.data[name]['values']
                 self.sc.twin.plot(timestamps, values,linestyle='dashed',label = name,color=cmap[i%len(cmap)])
         else:
             self.sc.twin.set_visible(False)
@@ -195,27 +178,10 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot(QModelIndex)
     def plotThis(self,index:QModelIndex):
-        name = index.data(Qt.DisplayRole)
-        dic = {'Chamber Pressure':'DepositChamberFullRangePressure',
-           'Massflow1':'Massflow1',
-           'Massflow2':'Massflow2',
-           'Massflow3':'Massflow3',
-           'Massflow4':'Massflow4',
-           'Maxim1 Current':'Maxim1_Current',
-           'Maxim1 Voltage':'Maxim1_Voltage',
-           'Maxim1 Power':'Maxim1_Power',
-           'Maxim2 Current':'Maxim2_Current',
-           'Maxim2 Voltage':'Maxim2_Voltage',
-           'Maxim2 Power':'Maxim2_Power',
-           'Maxim3 Current':'Maxim3_Current',
-           'Maxim3 Voltage':'Maxim3_Voltage',
-           'Maxim3 Power':'Maxim3_Power',
-           'Seren1 ForwardedMes':'Seren1_ForwardedMes',
-           'Seren1 ReflectedMes':'Seren1_ReflectedMes',
-           'Substrate Temperature':'SubstrateTemperature'
-           }
-        fileName = MainWidget.files[dic[name]]
-        timestamps, values = MainWidget.data[dic[name]]['timestamps'],MainWidget.data[dic[name]]['values']
+        displayName = index.data(Qt.DisplayRole)
+        name = MainWidget.displayName[displayName]
+        fileName = MainWidget.files[name]
+        timestamps, values = MainWidget.data[name]['timestamps'],MainWidget.data[name]['values']
         self.sc.axes.cla()
         self.sc.axes.plot(timestamps, values, color='r')
         xfmt = mdates.DateFormatter('%H:%M:%S')
@@ -249,7 +215,7 @@ class MainWindow(QMainWindow):
         MainWidget.OpenDir(path)
         self.LoadData()
         self.updateInfos()
-        self.list.setEnabled(True)
+        
         
         
 
@@ -266,20 +232,24 @@ class MainWindow(QMainWindow):
         self.worker1.moveToThread(self.thrd1)
         self.worker2.moveToThread(self.thrd2)
 
-        self.thrd1.start()
         self.thrd1.started.connect(self.worker1.run)
         self.worker1.signals.progress.connect(self.show_progress)
         self.worker1.signals.done.connect(self.closeLoadingBar)
-        self.thrd2.start()
+        self.thrd1.start()
+        
         self.thrd2.started.connect(self.worker2.run)
         self.worker2.signals.progress.connect(self.show_progress)
         self.worker2.signals.done.connect(self.closeLoadingBar)
+        self.thrd2.start()
+        
     
     @pyqtSlot()
     def closeLoadingBar(self):
         self.threadDone+=1
         if(self.threadDone >=2):
             self.bar.close()
+            self.model.setStringList(sorted(MainWidget.displayName.keys(),key=utils.alphanum_key))
+            self.list.setEnabled(True)
             self.plotAll()
             self.cleanTempDir()
 
@@ -293,9 +263,14 @@ class MainWindow(QMainWindow):
                     #ok was clicked
                     #Try cleaning the dir again
                     self.cleanTempDir()
+    
+    
     def show_progress(self,data):
-        MainWidget.data[data[0]]['timestamps']=data[1]
-        MainWidget.data[data[0]]['values']=data[2]
+        MainWidget.data[data[0]] = {'timestamps':data[1],'values':data[2]}
+        displayName = re.sub(r'(_)', r'', re.sub(r'([A-Z])', r' \1', data[0])).strip() #insert a space before each capital letters
+        MainWidget.displayName[displayName] = data[0]
+        #MainWidget.data[data[0]]['timestamps']=data[1]
+        #MainWidget.data[data[0]]['values']=data[2]
         self.bar.update()
 
     def updateInfos(self):

@@ -21,24 +21,7 @@ def clearWidget(widget):
     for child in children:        
         clearLayout(child)
 def ReadFiles(dir):
-    files_={'DepositChamberFullRangePressure':'',
-           'Massflow1':'',
-           'Massflow2':'',
-           'Massflow3':'',
-           'Massflow4':'',
-           'Maxim1_Current':'',
-           'Maxim1_Voltage':'',
-           'Maxim1_Power':'',
-           'Maxim2_Current':'',
-           'Maxim2_Voltage':'',
-           'Maxim2_Power':'',
-           'Maxim3_Current':'',
-           'Maxim3_Voltage':'',
-           'Maxim3_Power':'',
-           'RecipeInfos':'',
-           'Seren1_ForwardedMes':'',
-           'Seren1_ReflectedMes':'',
-           'SubstrateTemperature':''}
+    files_={}
     files = os.scandir(dir)
     for file in files:
         if('.CSV' in file.name):
@@ -74,42 +57,10 @@ class MainWidget():
     messageChanged = pyqtSignal(str)
     workingDir = '.'
     openedDir = '.'
-    files={'DepositChamberFullRangePressure':'',
-           'Massflow1':'',
-           'Massflow2':'',
-           'Massflow3':'',
-           'Massflow4':'',
-           'Maxim1_Current':'',
-           'Maxim1_Voltage':'',
-           'Maxim1_Power':'',
-           'Maxim2_Current':'',
-           'Maxim2_Voltage':'',
-           'Maxim2_Power':'',
-           'Maxim3_Current':'',
-           'Maxim3_Voltage':'',
-           'Maxim3_Power':'',
-           'RecipeInfos':'',
-           'Seren1_ForwardedMes':'',
-           'Seren1_ReflectedMes':'',
-           'SubstrateTemperature':''}
-    data ={'DepositChamberFullRangePressure':{'timestamps':[],'values':[]},
-           'Massflow1':{'timestamps':[],'values':[]},
-           'Massflow2':{'timestamps':[],'values':[]},
-           'Massflow3':{'timestamps':[],'values':[]},
-           'Massflow4':{'timestamps':[],'values':[]},
-           'Maxim1_Current':{'timestamps':[],'values':[]},
-           'Maxim1_Voltage':{'timestamps':[],'values':[]},
-           'Maxim1_Power':{'timestamps':[],'values':[]},
-           'Maxim2_Current':{'timestamps':[],'values':[]},
-           'Maxim2_Voltage':{'timestamps':[],'values':[]},
-           'Maxim2_Power':{'timestamps':[],'values':[]},
-           'Maxim3_Current':{'timestamps':[],'values':[]},
-           'Maxim3_Voltage':{'timestamps':[],'values':[]},
-           'Maxim3_Power':{'timestamps':[],'values':[]},
-           #'RecipeInfos':{'timestamps':[],'values':[]},
-           'Seren1_ForwardedMes':{'timestamps':[],'values':[]},
-           'Seren1_ReflectedMes':{'timestamps':[],'values':[]},
-           'SubstrateTemperature':{'timestamps':[],'values':[]}}
+    
+    files={}
+    displayName={}
+    data={}
     
     pool = QThreadPool()
     pool.setMaxThreadCount(1)
