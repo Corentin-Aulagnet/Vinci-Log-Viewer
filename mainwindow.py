@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QApplication,QAbstractItemView,QListView,QMainWindow,QWidget,QGridLayout,QFileSystemModel,QTreeView,QAction,QMessageBox,QFileDialog,QTextEdit,QPushButton,QVBoxLayout
 from PyQt5.QtCore import pyqtSlot,QModelIndex,Qt,QThread
+from PyQt5.QtGui import QIcon
 from mainwidget import MainWidget,Worker,clearLayout
 from utils import LoadingBar
 from customListModel import CustomListModel
@@ -13,8 +14,8 @@ import py7zr,zipfile
 import sys,os,shutil
 from updateCheck import start_update,UpdateCheckThread,get_latest_release
 class MainWindow(QMainWindow):
-    version = "v0.7.1"
-    date= "26th of September, 2024"
+    version = "v0.7.2"
+    date= "19th of November, 2024"
     github_user = 'Corentin-Aulagnet'
     github_repo = 'Vinci-Log-Viewer'
     asset_name= lambda s : f'VinciLogViewer_{s}_python3.8.zip'
@@ -27,7 +28,7 @@ class MainWindow(QMainWindow):
 
         self.setGeometry(self.left, self.top, self.width, self.height)
         self.setWindowTitle("Vinci Logs Viewer")
-        
+        self.setWindowIcon(QIcon("res\VinciLogViewer.ico"))
         
         self.initWorkingDir()
         self.initLayout()
@@ -131,24 +132,6 @@ class MainWindow(QMainWindow):
         self.sc.twin.cla()
         cmap = ["#fd7f6f", "#7eb0d5", "#b2e061", "#bd7ebe", "#ffb55a", "#ffee65", "#beb9db", "#fdcce5", "#8bd3c7"]
         leftScale = list(self.model.partiallyCheckedItems)
-        dic = {'Chamber Pressure':'DepositChamberFullRangePressure',
-            'Massflow1':'Massflow1',
-            'Massflow2':'Massflow2',
-            'Massflow3':'Massflow3',
-            'Massflow4':'Massflow4',
-            'Maxim1 Current':'Maxim1_Current',
-            'Maxim1 Voltage':'Maxim1_Voltage',
-            'Maxim1 Power':'Maxim1_Power',
-            'Maxim2 Current':'Maxim2_Current',
-            'Maxim2 Voltage':'Maxim2_Voltage',
-            'Maxim2 Power':'Maxim2_Power',
-            'Maxim3 Current':'Maxim3_Current',
-            'Maxim3 Voltage':'Maxim3_Voltage',
-            'Maxim3 Power':'Maxim3_Power',
-            'Seren1 ForwardedMes':'Seren1_ForwardedMes',
-            'Seren1 ReflectedMes':'Seren1_ReflectedMes',
-            'Substrate Temperature':'SubstrateTemperature'
-            }
         rightScale = list(self.model.checkedItems)
         for i,index in enumerate(leftScale):
             displayName = index.data(Qt.DisplayRole)
