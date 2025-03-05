@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication,QAbstractItemView,QListView,QMainWindow,QWidget,QGridLayout,QFileSystemModel,QTreeView,QAction,QMessageBox,QFileDialog,QTextEdit,QPushButton,QVBoxLayout
+from PyQt5.QtWidgets import QApplication,QAbstractItemView,QListView,QMainWindow,QWidget,QGridLayout,QFileSystemModel,QTreeView,QAction,QMessageBox,QFileDialog,QTextEdit,QPushButton,QVBoxLayout,QHBoxLayout,QComboBox
 from PyQt5.QtCore import pyqtSlot,QModelIndex,Qt,QThread
 from PyQt5.QtGui import QIcon
 from mainwidget import MainWidget,Worker,clearLayout
@@ -91,7 +91,7 @@ class MainWindow(QMainWindow):
         self.tree.setSortingEnabled(True)
         availableSize = self.tree.screen().availableGeometry().size()
         self.tree.resize(availableSize / 2)
-        self.tree.setColumnWidth(0, self.tree.width() / 3)
+        self.tree.setColumnWidth(0, self.tree.width() // 4)
         
         openButton = QPushButton("Open")
         openButton.clicked.connect(self.loadFolder)
@@ -139,6 +139,7 @@ class MainWindow(QMainWindow):
             fileName = MainWidget.files[name]
             timestamps, values = MainWidget.data[name]['timestamps'],MainWidget.data[name]['values']
             self.sc.axes.plot(timestamps, values,label = name,color=cmap[i%len(cmap)])
+            self.sc.axes.set_title(name)
         if(len(rightScale)>0):
             self.sc.twin.set_visible(True)
             for i,index in enumerate(rightScale):
@@ -147,6 +148,7 @@ class MainWindow(QMainWindow):
                 fileName = MainWidget.files[name]
                 timestamps, values = MainWidget.data[name]['timestamps'],MainWidget.data[name]['values']
                 self.sc.twin.plot(timestamps, values,linestyle='dashed',label = name,color=cmap[i%len(cmap)])
+                self.sc.twin.set_title(name)
         else:
             self.sc.twin.set_visible(False)
         if len(leftScale)+len(rightScale)>1:
@@ -175,8 +177,25 @@ class MainWindow(QMainWindow):
         clearLayout(self.graph_layout)
         self.sc = MplCanvas(self, width=7, height=4, dpi=100,_3D=_3D)
         self.toolbar = NavigationToolbar(self.sc, self)
+        self.hx = QHBoxLayout()
+        
+        self.yScaleComboBox = QComboBox()
+        self.yScaleComboBox.addItems(["linear","log"])
+        self.yScaleComboBox.currentTextChanged.connect(self.redrawScales)
+        self.yScaleComboBox.setToolTip("y-scale of 1st axis")
+        
+        self.hx.addWidget(self.toolbar)
+        self.hx.addWidget(self.yScaleComboBox)
+        self.hx.addStretch()
+
         self.graph_layout.addWidget(self.sc)
-        self.graph_layout.addWidget(self.toolbar)
+        self.graph_layout.addLayout(self.hx)
+    
+    @pyqtSlot(str)
+    def redrawScales(self,text):
+        self.sc.axes.set_yscale(text)
+        self.sc.draw()
+        
 
     @pyqtSlot()
     def loadFolder(self):
