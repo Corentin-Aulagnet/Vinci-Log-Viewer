@@ -14,8 +14,8 @@ import py7zr,zipfile
 import sys,os,shutil
 from updateCheck import start_update,UpdateCheckThread,get_latest_release
 class MainWindow(QMainWindow):
-    version = "v0.7.2"
-    date= "19th of November, 2024"
+    version = "v0.7.3"
+    date= "05th of March, 2025"
     github_user = 'Corentin-Aulagnet'
     github_repo = 'Vinci-Log-Viewer'
     asset_name= lambda s : f'VinciLogViewer_{s}_python3.8.zip'
@@ -183,7 +183,7 @@ class MainWindow(QMainWindow):
         self.yScaleComboBox.addItems(["linear","log"])
         self.yScaleComboBox.currentTextChanged.connect(self.redrawScales)
         self.yScaleComboBox.setToolTip("y-scale of 1st axis")
-        
+
         self.hx.addWidget(self.toolbar)
         self.hx.addWidget(self.yScaleComboBox)
         self.hx.addStretch()
