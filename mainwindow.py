@@ -240,10 +240,6 @@ class MainWindow(QMainWindow):
             return jobs
 
         self.threadDone = 0
-        
-
-        #self.thrd1 = QThread()
-        #self.thrd2 = QThread()
         self.maxThreads = QThreadPool.globalInstance().maxThreadCount()//2
         self.workers = []
         val = list(MainWidget.files.values())
@@ -252,7 +248,6 @@ class MainWindow(QMainWindow):
         self.bar.open()
         job_sizes = divide_task(len(val),self.maxThreads)
         print(f"Using {self.maxThreads} threads")
-        print(job_sizes)
         for i in range(self.maxThreads):
             job_size = job_sizes[i]
             v = val[job_size[0]:job_size[1]+1]
@@ -262,22 +257,6 @@ class MainWindow(QMainWindow):
             w.signals.done.connect(self.closeLoadingBar)
             self.workers.append(w)
             QThreadPool.globalInstance().start(w)
-        """
-        self.worker1 = Worker(val[:len(val)//2],keys[:len(keys)//2])
-        self.worker2 = Worker(val[len(val)//2:],keys[len(keys)//2:])
-        #self.worker1.moveToThread(self.thrd1)
-        #self.worker2.moveToThread(self.thrd2)
-
-        #self.thrd1.started.connect(self.worker1.run)
-        self.worker1.signals.progress.connect(self.show_progress)
-        self.worker1.signals.done.connect(self.closeLoadingBar)
-        QThreadPool.globalInstance().start(self.worker1)
-        
-        #self.thrd2.started.connect(self.worker2.run)
-        self.worker2.signals.progress.connect(self.show_progress)
-        self.worker2.signals.done.connect(self.closeLoadingBar)
-        QThreadPool.globalInstance().start(self.worker1)
-        """
     
     @pyqtSlot()
     def closeLoadingBar(self):
@@ -305,8 +284,6 @@ class MainWindow(QMainWindow):
         MainWidget.data[data[0]] = {'timestamps':data[1],'values':data[2]}
         displayName = re.sub(r'(_)', r'', re.sub(r'([A-Z])', r' \1', data[0])).strip() #insert a space before each capital letters
         MainWidget.displayName[displayName] = data[0]
-        #MainWidget.data[data[0]]['timestamps']=data[1]
-        #MainWidget.data[data[0]]['values']=data[2]
         self.bar.update()
 
     def updateInfos(self):
