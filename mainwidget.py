@@ -75,6 +75,8 @@ class MainWidget():
     @staticmethod
     def OpenDir(newDir):
         MainWidget.openedDir = newDir
+        MainWidget.files={}
+        MainWidget.displayName = {}
         files = ReadFiles(newDir)
         MainWidget.files = files
             
