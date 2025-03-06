@@ -22,17 +22,18 @@ class DownloadThread(QThread):
         
     def download_asset(self,url, file_name):
         response = requests.get(url, stream=True)
-        dl_size = int(response.headers.get("content-length"))
-        dld_size = 0
-        self.read_download_size.emit(dl_size//1024)
-        with open(file_name, 'wb') as file:
-            chunk_size = 1024
-            for chunk in response.iter_content(chunk_size=chunk_size):
-                if chunk:
-                    file.write(chunk)
-                    dld_size += 1 #kb
-                    #print("{}/{}kbytes downloaded".format(dld_size,dl_size//1024))
-                    self.update_download.emit()
+        if response != None:
+            dl_size = int(response.headers.get("content-length"))
+            dld_size = 0
+            self.read_download_size.emit(dl_size//1024)
+            with open(file_name, 'wb') as file:
+                chunk_size = 1024
+                for chunk in response.iter_content(chunk_size=chunk_size):
+                    if chunk:
+                        file.write(chunk)
+                        dld_size += 1 #kb
+                        #print("{}/{}kbytes downloaded".format(dld_size,dl_size//1024))
+                        self.update_download.emit()
 
 
 class Updater(QWidget):

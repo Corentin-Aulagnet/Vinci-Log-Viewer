@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QApplication,QAbstractItemView,QListView,QMainWindow,QWidget,QGridLayout,QFileSystemModel,QTreeView,QAction,QMessageBox,QFileDialog,QTextEdit,QPushButton,QVBoxLayout,QHBoxLayout,QComboBox
-from PyQt5.QtCore import pyqtSlot,QModelIndex,Qt,QThread
+from PyQt5.QtCore import pyqtSlot,QModelIndex,Qt,QThread,QThreadPool
 from PyQt5.QtGui import QIcon
 from mainwidget import MainWidget,Worker,clearLayout
 from utils import LoadingBar
@@ -14,8 +14,8 @@ import py7zr,zipfile
 import sys,os,shutil
 from updateCheck import start_update,UpdateCheckThread,get_latest_release
 class MainWindow(QMainWindow):
-    version = "v0.7.3"
-    date= "05th of March, 2025"
+    version = "v0.8.0"
+    date= "06th of March, 2025"
     github_user = 'Corentin-Aulagnet'
     github_repo = 'Vinci-Log-Viewer'
     asset_name= lambda s : f'VinciLogViewer_{s}_python3.8.zip'
@@ -28,7 +28,7 @@ class MainWindow(QMainWindow):
 
         self.setGeometry(self.left, self.top, self.width, self.height)
         self.setWindowTitle("Vinci Logs Viewer")
-        self.setWindowIcon(QIcon("res\VinciLogViewer.ico"))
+        self.setWindowIcon(QIcon("res\\VinciLogViewer.ico"))
         
         self.initWorkingDir()
         self.initLayout()
@@ -219,36 +219,70 @@ class MainWindow(QMainWindow):
         self.updateInfos()
         
         
+    
+    def LoadData(self):
+        def divide_task(N:int, n:int)->'list[tuple[int,int]]':
+            """
+            Divide a task of length N into n jobs as evenly as possible.
+            Returns a list of (start, end) index ranges for each job.
+            """
+            jobs = []
+            base = N // n  # Base workload per job
+            extra = N % n   # Remaining extra workload to distribute
+            start = 0
+            
+            for i in range(n):
+                # Distribute the extra workload among the first 'extra' jobs
+                end = start + base + (1 if i < extra else 0) - 1
+                jobs.append((start, end))
+                start = end + 1
+            
+            return jobs
+
+        self.threadDone = 0
         
 
-    def LoadData(self):
-        self.threadDone = 0
-        self.bar = LoadingBar(18,title="Import Progress",parent=self)
-        self.bar.open()
-        self.thrd1 = QThread()
-        self.thrd2 = QThread()
+        #self.thrd1 = QThread()
+        #self.thrd2 = QThread()
+        self.maxThreads = QThreadPool.globalInstance().maxThreadCount()//2
+        self.workers = []
         val = list(MainWidget.files.values())
         keys = list(MainWidget.files.keys())
+        self.bar = LoadingBar(len(val),title="Import Progress",parent=self)
+        self.bar.open()
+        job_sizes = divide_task(len(val),self.maxThreads)
+        print(f"Using {self.maxThreads} threads")
+        print(job_sizes)
+        for i in range(self.maxThreads):
+            job_size = job_sizes[i]
+            v = val[job_size[0]:job_size[1]+1]
+            k= keys[job_size[0]:job_size[1]+1]
+            w = Worker(v,k)
+            w.signals.progress.connect(self.show_progress)
+            w.signals.done.connect(self.closeLoadingBar)
+            self.workers.append(w)
+            QThreadPool.globalInstance().start(w)
+        """
         self.worker1 = Worker(val[:len(val)//2],keys[:len(keys)//2])
         self.worker2 = Worker(val[len(val)//2:],keys[len(keys)//2:])
-        self.worker1.moveToThread(self.thrd1)
-        self.worker2.moveToThread(self.thrd2)
+        #self.worker1.moveToThread(self.thrd1)
+        #self.worker2.moveToThread(self.thrd2)
 
-        self.thrd1.started.connect(self.worker1.run)
+        #self.thrd1.started.connect(self.worker1.run)
         self.worker1.signals.progress.connect(self.show_progress)
         self.worker1.signals.done.connect(self.closeLoadingBar)
-        self.thrd1.start()
+        QThreadPool.globalInstance().start(self.worker1)
         
-        self.thrd2.started.connect(self.worker2.run)
+        #self.thrd2.started.connect(self.worker2.run)
         self.worker2.signals.progress.connect(self.show_progress)
         self.worker2.signals.done.connect(self.closeLoadingBar)
-        self.thrd2.start()
-        
+        QThreadPool.globalInstance().start(self.worker1)
+        """
     
     @pyqtSlot()
     def closeLoadingBar(self):
         self.threadDone+=1
-        if(self.threadDone >=2):
+        if(self.threadDone >=self.maxThreads):
             self.bar.close()
             self.model.setStringList(sorted(MainWidget.displayName.keys(),key=utils.alphanum_key))
             self.list.setEnabled(True)

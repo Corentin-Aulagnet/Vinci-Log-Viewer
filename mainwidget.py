@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QWidget,QLayout
-from PyQt5.QtCore import QThreadPool, QObject,  pyqtSignal
+from PyQt5.QtCore import QThreadPool, QObject,  pyqtSignal,QRunnable
 from PyQt5.QtCore import pyqtSignal
 import os
 from datetime import datetime
@@ -48,7 +48,11 @@ def ParseData(fileName):
             values=[]
             for line in lines:
                 data = line.split(',')
-                timestamps.append(datetime.strptime(data[0],"%d/%m/%Y %H:%M:%S.%f"))
+                date,time = data[0].split(' ')
+                d,m,Y = date.split('/')
+                H,M,S = time.split(':')
+                s,ms = S.split('.')
+                timestamps.append("{}-{}-{} {}:{}:{}.{}".format(Y,m,d,H,M,s,ms))
                 values.append(float(data[1]))
             timestamps=mdates.date2num(timestamps)
         return timestamps,values
@@ -62,8 +66,6 @@ class MainWidget():
     displayName={}
     data={}
     
-    pool = QThreadPool()
-    pool.setMaxThreadCount(1)
     @staticmethod
     def SetWorkingDir(newDir):
         MainWidget.workingDir = newDir
@@ -85,7 +87,8 @@ class WorkerSignals(QObject):
     done = pyqtSignal()
     progress = pyqtSignal(list)
 
-class Worker(QObject):
+class Worker(QRunnable):
+    id = 0
     def __init__(self, files,names):
         super(Worker, self).__init__()
 
@@ -94,11 +97,13 @@ class Worker(QObject):
         self.signals = WorkerSignals()
 
     def run(self):
+        Worker.id+=1
+        print(f"Started Worker {Worker.id}")
         for i in range(len(self.files)):
             if(self.names[i] == 'RecipeInfos'):
                 continue
             timestamps,values = ParseData(self.files[i])
             self.signals.progress.emit([self.names[i],timestamps,values])
         self.signals.done.emit()
-        self.thread().exit(0)
+        #self.thread().exit(0)
 
