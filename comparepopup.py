@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QStatusBar,QAbstractItemView,QListView,QLayout,QMainWindow,QWidget,QGridLayout,QHBoxLayout,QFileSystemModel,QTreeView,QAction,QMessageBox,QFileDialog,QTextEdit,QPushButton,QVBoxLayout
-from PyQt5.QtCore import pyqtSlot,QModelIndex,Qt,QThread
+from PyQt5.QtCore import pyqtSlot,QModelIndex,Qt,QThreadPool
 from mainwidget import ReadFiles,ParseData,Worker,MainWidget,clearLayout,clearWidget
 from utils import LoadingBar
 from customListModel import CustomListModel
@@ -65,30 +65,43 @@ class LogLoader(QWidget):
         self.setLayout(self.layout)
 
     def LoadData(self,index):
+        def divide_task(N:int, n:int)->'list[tuple[int,int]]':
+            """
+            Divide a task of length N into n jobs as evenly as possible.
+            Returns a list of (start, end) index ranges for each job.
+            """
+            jobs = []
+            base = N // n  # Base workload per job
+            extra = N % n   # Remaining extra workload to distribute
+            start = 0
+            
+            for i in range(n):
+                # Distribute the extra workload among the first 'extra' jobs
+                end = start + base + (1 if i < extra else 0) - 1
+                jobs.append((start, end))
+                start = end + 1
+            
+            return jobs
+
         self.threadDone = 0
+        self.maxThreads = QThreadPool.globalInstance().maxThreadCount()//2
+        self.workers = []
+        val = list(self.files.values())
+        keys = list(self.files.keys())
         self.bar = LoadingBar(18,text="Loading Logs {}".format(self.index),title="ImportProgress",parent=self)
         self.parent().notifyLoading(self.index)
         self.parent().statusbar.addWidget(self.bar)
-        if self.thrd1 == None:
-            self.thrd1 = QThread()
-        if self.thrd2 == None:
-            self.thrd2 = QThread()
-        val = list(self.files.values())
-        keys = list(self.files.keys())
-        self.worker1 = Worker(val[:len(val)//2],keys[:len(keys)//2])
-        self.worker2 = Worker(val[len(val)//2:],keys[len(keys)//2:])
-        self.worker1.moveToThread(self.thrd1)
-        self.worker2.moveToThread(self.thrd2)
-
-        self.thrd1.started.connect(self.worker1.run)
-        self.worker1.signals.progress.connect(self.show_progress)
-        self.worker1.signals.done.connect(self.closeLoadingBar)
-        self.thrd1.start()
-        
-        self.thrd2.started.connect(self.worker2.run)
-        self.worker2.signals.progress.connect(self.show_progress)
-        self.worker2.signals.done.connect(self.closeLoadingBar)
-        self.thrd2.start()
+        job_sizes = divide_task(len(val),self.maxThreads)
+        print(f"Using {self.maxThreads} threads")
+        for i in range(self.maxThreads):
+            job_size = job_sizes[i]
+            v = val[job_size[0]:job_size[1]+1]
+            k= keys[job_size[0]:job_size[1]+1]
+            w = Worker(v,k)
+            w.signals.progress.connect(self.show_progress)
+            w.signals.done.connect(self.closeLoadingBar)
+            self.workers.append(w)
+            QThreadPool.globalInstance().start(w)
         
 
     @pyqtSlot()

@@ -2,6 +2,7 @@ user.pref
 build.ps1
 launch.json
 /test/*
+.vscode/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
