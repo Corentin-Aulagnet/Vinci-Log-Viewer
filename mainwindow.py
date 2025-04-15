@@ -16,8 +16,8 @@ from updateCheck import start_update,UpdateCheckThread,get_latest_release
 from logModel import LogModel
 from logLoader import LogLoader
 class MainWindow(QMainWindow):
-    version = "v0.8.1"
-    date= "06th of March, 2025"
+    version = "v0.9.0"
+    date= "15th of April, 2025"
     github_user = 'Corentin-Aulagnet'
     github_repo = 'Vinci-Log-Viewer'
     asset_name= lambda s : f'VinciLogViewer_{s}_python3.8.zip'
