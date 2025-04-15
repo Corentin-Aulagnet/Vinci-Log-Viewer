@@ -13,6 +13,8 @@ import utils
 import py7zr,zipfile
 import sys,os,shutil
 from updateCheck import start_update,UpdateCheckThread,get_latest_release
+from logModel import LogModel
+from logLoader import LogLoader
 class MainWindow(QMainWindow):
     version = "v0.8.1"
     date= "06th of March, 2025"
@@ -35,6 +37,8 @@ class MainWindow(QMainWindow):
         
         self.initMenus()
         self.checkForUpdates()
+
+        self.logModel = LogModel()
         self.show()
         
         
@@ -135,18 +139,18 @@ class MainWindow(QMainWindow):
         rightScale = list(self.model.checkedItems)
         for i,index in enumerate(leftScale):
             displayName = index.data(Qt.DisplayRole)
-            name = MainWidget.displayName[displayName]
-            fileName = MainWidget.files[name]
-            timestamps, values = MainWidget.data[name]['timestamps'],MainWidget.data[name]['values']
+            name = self.logModel.displayName[displayName]
+            fileName = self.logModel.files[name]
+            timestamps, values = self.logModel.data[name]['timestamps'],self.logModel.data[name]['values']
             self.sc.axes.plot(timestamps, values,label = name,color=cmap[i%len(cmap)])
             self.sc.axes.set_title(name)
         if(len(rightScale)>0):
             self.sc.twin.set_visible(True)
             for i,index in enumerate(rightScale):
                 displayName = index.data(Qt.DisplayRole)
-                name = MainWidget.displayName[displayName]
-                fileName = MainWidget.files[name]
-                timestamps, values = MainWidget.data[name]['timestamps'],MainWidget.data[name]['values']
+                name = self.logModel.displayName[displayName]
+                fileName = self.logModel.files[name]
+                timestamps, values = self.logModel.data[name]['timestamps'],self.logModel.data[name]['values']
                 self.sc.twin.plot(timestamps, values,linestyle='dashed',label = name,color=cmap[i%len(cmap)])
                 self.sc.twin.set_title(name)
         else:
@@ -164,9 +168,9 @@ class MainWindow(QMainWindow):
     @pyqtSlot(QModelIndex)
     def plotThis(self,index:QModelIndex):
         displayName = index.data(Qt.DisplayRole)
-        name = MainWidget.displayName[displayName]
-        fileName = MainWidget.files[name]
-        timestamps, values = MainWidget.data[name]['timestamps'],MainWidget.data[name]['values']
+        name = self.logModel.displayName[displayName]
+        fileName = self.logModel.files[name]
+        timestamps, values = self.logModel.data[name]['timestamps'],self.logModel.data[name]['values']
         self.sc.axes.cla()
         self.sc.axes.plot(timestamps, values, color='r')
         xfmt = mdates.DateFormatter('%H:%M:%S')
@@ -214,56 +218,26 @@ class MainWindow(QMainWindow):
                     z.extractall("tmp")
             else:
                 return
-        MainWidget.OpenDir(path)
+        self.logModel.OpenDir(path)
         self.LoadData()
         self.updateInfos()
         
         
     
     def LoadData(self):
-        def divide_task(N:int, n:int)->'list[tuple[int,int]]':
-            """
-            Divide a task of length N into n jobs as evenly as possible.
-            Returns a list of (start, end) index ranges for each job.
-            """
-            jobs = []
-            base = N // n  # Base workload per job
-            extra = N % n   # Remaining extra workload to distribute
-            start = 0
-            
-            for i in range(n):
-                # Distribute the extra workload among the first 'extra' jobs
-                end = start + base + (1 if i < extra else 0) - 1
-                jobs.append((start, end))
-                start = end + 1
-            
-            return jobs
-
         self.threadDone = 0
         self.maxThreads = QThreadPool.globalInstance().maxThreadCount()//2
-        self.workers = []
-        val = list(MainWidget.files.values())
-        keys = list(MainWidget.files.keys())
-        self.bar = LoadingBar(len(val),title="Import Progress",parent=self)
+        self.bar = LoadingBar(len(self.logModel.files.values()),title="Import Progress",parent=self)
         self.bar.open()
-        job_sizes = divide_task(len(val),self.maxThreads)
-        print(f"Using {self.maxThreads} threads")
-        for i in range(self.maxThreads):
-            job_size = job_sizes[i]
-            v = val[job_size[0]:job_size[1]+1]
-            k= keys[job_size[0]:job_size[1]+1]
-            w = Worker(v,k)
-            w.signals.progress.connect(self.show_progress)
-            w.signals.done.connect(self.closeLoadingBar)
-            self.workers.append(w)
-            QThreadPool.globalInstance().start(w)
+        logLoader = LogLoader(self.logModel.files,self.show_progress,self.closeLoadingBar)
+        logLoader.LoadData()
     
     @pyqtSlot()
     def closeLoadingBar(self):
         self.threadDone+=1
         if(self.threadDone >=self.maxThreads):
             self.bar.close()
-            self.model.setStringList(sorted(MainWidget.displayName.keys(),key=utils.alphanum_key))
+            self.model.setStringList(sorted(self.logModel.displayName.keys(),key=utils.alphanum_key))
             self.list.setEnabled(True)
             self.plotAll()
             self.cleanTempDir()
@@ -281,13 +255,13 @@ class MainWindow(QMainWindow):
     
     
     def show_progress(self,data):
-        MainWidget.data[data[0]] = {'timestamps':data[1],'values':data[2]}
+        self.logModel.data[data[0]] = {'timestamps':data[1],'values':data[2]}
         displayName = re.sub(r'(_)', r'', re.sub(r'([A-Z])', r' \1', data[0])).strip() #insert a space before each capital letters
-        MainWidget.displayName[displayName] = data[0]
+        self.logModel.displayName[displayName] = data[0]
         self.bar.update()
 
     def updateInfos(self):
-        self.textDisplay.setText(open(MainWidget.files['RecipeInfos']).read())
+        self.textDisplay.setText(open(self.logModel.files['RecipeInfos']).read())
     def initMenus(self):
         ##Tools
         self.toolsMenu = self.menuBar().addMenu("&Tools")
