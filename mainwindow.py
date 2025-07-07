@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QApplication,QAbstractItemView,QListView,QMainWindow,QWidget,QGridLayout,QFileSystemModel,QTreeView,QAction,QMessageBox,QFileDialog,QTextEdit,QPushButton,QVBoxLayout,QHBoxLayout,QComboBox
 from PyQt5.QtCore import pyqtSlot,QModelIndex,Qt,QThread,QThreadPool
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon,QDragEnterEvent,QDropEvent
 from mainwidget import MainWidget,Worker,clearLayout
 from utils import LoadingBar
 from customListModel import CustomListModel
@@ -16,8 +16,8 @@ from updateCheck import start_update,UpdateCheckThread,get_latest_release
 from logModel import LogModel
 from logLoader import LogLoader
 class MainWindow(QMainWindow):
-    version = "v0.9.0"
-    date= "15th of April, 2025"
+    version = "v0.9.1"
+    date= "07th of July, 2025"
     github_user = 'Corentin-Aulagnet'
     github_repo = 'Vinci-Log-Viewer'
     asset_name= lambda s : f'VinciLogViewer_{s}_python3.8.zip'
@@ -31,7 +31,8 @@ class MainWindow(QMainWindow):
         self.setGeometry(self.left, self.top, self.width, self.height)
         self.setWindowTitle("Vinci Logs Viewer")
         self.setWindowIcon(QIcon("res\\VinciLogViewer.ico"))
-        
+        self.setAcceptDrops(True)
+
         self.initWorkingDir()
         self.initLayout()
         
@@ -41,7 +42,24 @@ class MainWindow(QMainWindow):
         self.logModel = LogModel()
         self.show()
         
-        
+    def dragEnterEvent(self, event:QDragEnterEvent):
+        event.accept()
+    def dropEvent(self, event:QDropEvent):
+        mimeData = event.mimeData()
+ 
+        # check for our needed mime type, here a file or a list of files
+        if mimeData.hasUrls():
+            pathList = []
+            urlList = mimeData.urls()
+            # extract the local paths of the files
+            for i in range(min(len(urlList),32)):
+            
+                pathList.append(urlList[i].toLocalFile())
+            
+            if os.path.isfile(pathList[0]) or os.path.isdir(pathList[0]):
+                self.loadFolder(pathList[0])
+
+
     def start(self):
         self.checkForUpdates()
 
@@ -200,10 +218,12 @@ class MainWindow(QMainWindow):
         self.sc.axes.set_yscale(text)
         self.sc.draw()
         
-
-    @pyqtSlot()
-    def loadFolder(self):
+    def openFromTree(self):
         path = self.tree.model().filePath(self.tree.selectedIndexes()[0])
+        self.loadFolder(path)
+    @pyqtSlot()
+    def loadFolder(self,path):
+        #path = self.tree.model().filePath(self.tree.selectedIndexes()[0])
         if(not os.path.isdir(path)):
             file = path
             path = "tmp"
