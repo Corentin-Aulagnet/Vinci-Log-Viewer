@@ -16,8 +16,8 @@ from updateCheck import start_update,UpdateCheckThread,get_latest_release
 from logModel import LogModel
 from logLoader import LogLoader
 class MainWindow(QMainWindow):
-    version = "v0.9.1"
-    date= "07th of July, 2025"
+    version = "v0.9.2"
+    date= "08th of July, 2025"
     github_user = 'Corentin-Aulagnet'
     github_repo = 'Vinci-Log-Viewer'
     asset_name= lambda s : f'VinciLogViewer_{s}_python3.8.zip'
@@ -116,7 +116,7 @@ class MainWindow(QMainWindow):
         self.tree.setColumnWidth(0, self.tree.width() // 4)
         
         openButton = QPushButton("Open")
-        openButton.clicked.connect(self.loadFolder)
+        openButton.clicked.connect(self.openFromTree)
 
         sublayout.addWidget(self.tree)
         sublayout.addWidget(openButton)
