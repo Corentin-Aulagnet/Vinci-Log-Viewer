@@ -5,12 +5,13 @@ from mainwidget import MainWidget,Worker,clearLayout
 from utils import LoadingBar
 from customListModel import CustomListModel
 from comparepopup import ComparePopUp
-import re
+import re #BSD
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-import matplotlib.dates as mdates
+import matplotlib.dates as mdates #BSD
 from mplcanvas import MplCanvas
 import utils
-import py7zr,zipfile
+import py7zr #GNU-L V2.1
+import zipfile
 import sys,os,shutil
 from updateCheck import start_update,UpdateCheckThread,get_latest_release
 from logModel import LogModel
@@ -233,6 +234,8 @@ class MainWindow(QMainWindow):
                 with zipfile.ZipFile(file, mode='r') as zip_ref:
                     zip_ref.extractall("tmp")
             elif(file[-3:]==".7z"):
+                if(os.path.exists("tmp")):
+                   self.cleanTempDir()
                 os.mkdir("tmp")
                 with py7zr.SevenZipFile(file, mode='r') as z:
                     z.extractall("tmp")

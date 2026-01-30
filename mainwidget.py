@@ -53,7 +53,13 @@ def ParseData(fileName):
                 H,M,S = time.split(':')
                 s,ms = S.split('.')
                 timestamps.append("{}-{}-{} {}:{}:{}.{}".format(Y,m,d,H,M,s,ms))
-                values.append(float(data[1]))
+                #breakpoint()
+                value = data[1].strip()
+                try:
+                    value = float(value)
+                except ValueError:
+                    value = float('nan')
+                values.append(value)
             timestamps=mdates.date2num(timestamps)
         return timestamps,values
 
