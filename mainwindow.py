@@ -17,8 +17,8 @@ from updateCheck import start_update,UpdateCheckThread,get_latest_release
 from logModel import LogModel
 from logLoader import LogLoader
 class MainWindow(QMainWindow):
-    version = "v0.9.3"
-    date= "30th of January, 2026"
+    version = "v0.9.4"
+    date= "06th of February, 2026"
     github_user = 'Corentin-Aulagnet'
     github_repo = 'Vinci-Log-Viewer'
     asset_name= lambda s : f'VinciLogViewer_{s}_python3.8.zip'
@@ -153,6 +153,8 @@ class MainWindow(QMainWindow):
     def plotAll(self,topLeft:QModelIndex=None,topRight:QModelIndex=None):
         self.sc.axes.cla()
         self.sc.twin.cla()
+        self.sc.twin.yaxis.set_label_position("right")
+        self.sc.twin.yaxis.tick_right()
         cmap = ["#fd7f6f", "#7eb0d5", "#b2e061", "#bd7ebe", "#ffb55a", "#ffee65", "#beb9db", "#fdcce5", "#8bd3c7"]
         leftScale = list(self.model.partiallyCheckedItems)
         rightScale = list(self.model.checkedItems)
@@ -171,7 +173,7 @@ class MainWindow(QMainWindow):
                 fileName = self.logModel.files[name]
                 timestamps, values = self.logModel.data[name]['timestamps'],self.logModel.data[name]['values']
                 self.sc.twin.plot(timestamps, values,linestyle='dashed',label = name,color=cmap[i%len(cmap)])
-                self.sc.twin.set_title(name)
+                #self.sc.twin.set_title(name)
         else:
             self.sc.twin.set_visible(False)
         if len(leftScale)+len(rightScale)>1:
@@ -230,7 +232,11 @@ class MainWindow(QMainWindow):
             path = "tmp"
             if(file[-3:]=="zip"):
                 #Extract to a tmp folder first
-                os.mkdir("tmp")
+                try:
+                    os.mkdir("tmp")
+                except FileExistsError:
+                    shutil.rmtree("tmp")
+                    os.mkdir("tmp")
                 with zipfile.ZipFile(file, mode='r') as zip_ref:
                     zip_ref.extractall("tmp")
             elif(file[-3:]==".7z"):
@@ -284,6 +290,7 @@ class MainWindow(QMainWindow):
         self.bar.update()
 
     def updateInfos(self):
+        
         self.textDisplay.setText(open(self.logModel.files['RecipeInfos']).read())
     def initMenus(self):
         ##Tools
